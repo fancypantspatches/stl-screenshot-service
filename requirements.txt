@@ -1,5 +1,6 @@
 Flask
 requests
 trimesh
-pyglet<2
 numpy
+pyglet<2
+Pillow
