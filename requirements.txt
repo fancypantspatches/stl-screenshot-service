@@ -1,4 +1,7 @@
 flask
-trimesh
 gunicorn
-moderngl
+trimesh
+pyrender
+numpy
+PyOpenGL
+Pillow
