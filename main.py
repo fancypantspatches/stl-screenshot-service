@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, jsonify, send_file
 import trimesh
 import tempfile
 import os
@@ -16,16 +16,10 @@ def render_stl():
         return jsonify({"error": "No selected file"}), 400
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as temp_file:
             file.save(temp_file.name)
-            temp_path = temp_file.name
-
-        # Load the mesh from file
-        mesh = trimesh.load(temp_path)
-
-        # Create an image from the mesh
-        scene = mesh.scene()
-        image = scene.save_image(resolution=(600, 600), visible=True)
+            mesh = trimesh.load(temp_file.name)
+            image = mesh.scene().save_image(resolution=(600, 600), visible=True)
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as out_img:
             out_img.write(image)
@@ -35,7 +29,3 @@ def render_stl():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port)
