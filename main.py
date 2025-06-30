@@ -2,10 +2,9 @@ from flask import Flask, request, send_file, jsonify
 import tempfile
 import os
 import requests
-import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import trimesh
-import pyrender
-from PIL import Image
 
 app = Flask(__name__)
 
@@ -24,35 +23,28 @@ def render_stl():
             temp_path = temp_file.name
 
         mesh = trimesh.load(temp_path)
-        scene = pyrender.Scene()
-        mesh = pyrender.Mesh.from_trimesh(mesh)
-        scene.add(mesh)
 
-        camera = pyrender.PerspectiveCamera(yfov=np.pi / 3.0)
-        scene.add(camera, pose=[[1, 0, 0, 0],
-                                [0, 1, 0, -0.1],
-                                [0, 0, 1, 0.3],
-                                [0, 0, 0, 1]])
+        # Create plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
 
-        light = pyrender.DirectionalLight(color=np.ones(3), intensity=2.0)
-        scene.add(light, pose=[[1, 0, 0, 0],
-                               [0, 1, 0, 0],
-                               [0, 0, 1, 1],
-                               [0, 0, 0, 1]])
+        mesh_faces = mesh.vertices[mesh.faces]
+        ax.add_collection3d(Poly3DCollection(mesh_faces, facecolor='lightgrey', edgecolor='black', linewidths=0.1, alpha=1))
 
-        renderer = pyrender.OffscreenRenderer(512, 512)
-        color, _ = renderer.render(scene)
-        image = Image.fromarray(color)
+        scale = mesh.vertices.flatten()
+        ax.auto_scale_xyz(scale, scale, scale)
+        ax.axis('off')
 
-        output_path = temp_path.replace(".stl", "_preview.png")
-        image.save(output_path)
+        preview_path = temp_path.replace(".stl", "_preview.png")
+        plt.savefig(preview_path, bbox_inches='tight', pad_inches=0, dpi=300)
+        plt.close()
 
-        return send_file(output_path, mimetype='image/png')
+        return send_file(preview_path, mimetype='image/png')
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
-        if os.path.exists(output_path):
-            os.remove(output_path)
+        if os.path.exists(preview_path):
+            os.remove(preview_path)

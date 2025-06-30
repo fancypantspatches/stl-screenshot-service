@@ -1,6 +1,4 @@
 Flask
 trimesh
-pyrender
-PyOpenGL
+matplotlib
 numpy
-Pillow
