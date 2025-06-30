@@ -1,5 +1,3 @@
-# Triggering redeploy
-
 import os
 import io
 import tempfile
@@ -27,6 +25,11 @@ def render_stl():
     try:
         mesh = trimesh.load(temp_path, force='mesh')
 
+        # Check for empty mesh
+        if mesh.vertices.size == 0 or mesh.faces.size == 0:
+            return jsonify({"error": "No mesh data found in STL file."}), 400
+
+        # Create 3D plot using plotly
         fig = go.Figure(data=[
             go.Mesh3d(
                 x=mesh.vertices[:, 0],
@@ -36,10 +39,13 @@ def render_stl():
                 j=mesh.faces[:, 1],
                 k=mesh.faces[:, 2],
                 color='lightblue',
-                opacity=0.5
+                opacity=0.7
             )
         ])
+
+        # Camera and layout setup
         fig.update_layout(
+            scene_camera=dict(eye=dict(x=1.5, y=1.5, z=1.5)),
             scene=dict(
                 xaxis=dict(visible=False),
                 yaxis=dict(visible=False),
@@ -48,7 +54,7 @@ def render_stl():
             margin=dict(l=0, r=0, b=0, t=0),
         )
 
-        # Save to a temporary image
+        # Save image
         temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
         fig.write_image(temp_img.name, width=600, height=600, scale=1)
         temp_img.seek(0)
@@ -60,3 +66,8 @@ def render_stl():
 
     finally:
         os.remove(temp_path)
+
+# Run locally
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5001))
+    app.run(debug=True, host='0.0.0.0', port=port)
