@@ -1,4 +1,4 @@
 flask
 trimesh
 gunicorn
-pyglet
+pyglet<2
