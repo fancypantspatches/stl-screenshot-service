@@ -1,5 +1,5 @@
 Flask
 requests
 trimesh
-pyglet
+pyglet<2
 numpy
