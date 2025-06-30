@@ -1,18 +1,17 @@
 import os
 import io
 import tempfile
-import trimesh # type: ignore
-import pyrender # type: ignore
-import numpy as np # type: ignore
-from PIL import Image # type: ignore
-from flask import Flask, request, send_file, jsonify # type: ignore
+import trimesh
+import plotly.graph_objects as go
+from PIL import Image
+from flask import Flask, request, send_file, jsonify
 
 app = Flask(__name__)
 
 @app.route('/render-stl', methods=['POST'])
 def render_stl():
     if 'file' not in request.files:
-        return jsonify({"error": "No file part in request"}), 400
+        return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files['file']
     if file.filename == '':
@@ -24,34 +23,38 @@ def render_stl():
         temp_path = temp_file.name
 
     try:
-        # Load mesh
         mesh = trimesh.load(temp_path, force='mesh')
-        if not isinstance(mesh, trimesh.Trimesh):
-            mesh = mesh.dump().sum()  # flatten scene if it's a scene
 
-        # Convert to pyrender mesh
-        render_mesh = pyrender.Mesh.from_trimesh(mesh)
+        fig = go.Figure(data=[
+            go.Mesh3d(
+                x=mesh.vertices[:, 0],
+                y=mesh.vertices[:, 1],
+                z=mesh.vertices[:, 2],
+                i=mesh.faces[:, 0],
+                j=mesh.faces[:, 1],
+                k=mesh.faces[:, 2],
+                color='lightblue',
+                opacity=0.5
+            )
+        ])
+        fig.update_layout(
+            scene=dict(
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                zaxis=dict(visible=False)
+            ),
+            margin=dict(l=0, r=0, b=0, t=0),
+        )
 
-        # Set up scene and renderer
-        scene = pyrender.Scene()
-        scene.add(render_mesh)
+        # Save to a temporary image
+        temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+        fig.write_image(temp_img.name, width=600, height=600, scale=1)
+        temp_img.seek(0)
 
-        renderer = pyrender.OffscreenRenderer(viewport_width=600, viewport_height=600)
-        color, _ = renderer.render(scene)
-        renderer.delete()
-
-        # Convert to image and return
-        image = Image.fromarray(color)
-        img_io = io.BytesIO()
-        image.save(img_io, 'PNG')
-        img_io.seek(0)
-
-        return send_file(img_io, mimetype='image/png', as_attachment=True, download_name='preview.png')
+        return send_file(temp_img.name, mimetype='image/png', as_attachment=True, download_name='preview.png')
 
     except Exception as e:
-        app.logger.error(f"Error processing file: {e}")
         return jsonify({"error": str(e)}), 500
 
     finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        os.remove(temp_path)
