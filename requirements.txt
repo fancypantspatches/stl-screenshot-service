@@ -1,7 +1,6 @@
 flask
 gunicorn
 trimesh
-pyrender
-numpy
-PyOpenGL
+plotly
+kaleido
 Pillow
