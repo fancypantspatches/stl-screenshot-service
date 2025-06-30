@@ -22,14 +22,13 @@ def render_stl():
         file.save(temp_file)
         temp_path = temp_file.name
 
-    try:
+       try:
         mesh = trimesh.load(temp_path, force='mesh')
 
-        # Check for empty mesh
         if mesh.vertices.size == 0 or mesh.faces.size == 0:
+            app.logger.error("Mesh is empty: no vertices or faces.")
             return jsonify({"error": "No mesh data found in STL file."}), 400
 
-        # Create 3D plot using plotly
         fig = go.Figure(data=[
             go.Mesh3d(
                 x=mesh.vertices[:, 0],
@@ -43,7 +42,6 @@ def render_stl():
             )
         ])
 
-        # Camera and layout setup
         fig.update_layout(
             scene_camera=dict(eye=dict(x=1.5, y=1.5, z=1.5)),
             scene=dict(
@@ -54,13 +52,17 @@ def render_stl():
             margin=dict(l=0, r=0, b=0, t=0),
         )
 
-        # Save image
+        # Debug before image write
+        app.logger.info("Writing preview image...")
         temp_img = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
         fig.write_image(temp_img.name, width=600, height=600, scale=1)
         temp_img.seek(0)
 
         return send_file(temp_img.name, mimetype='image/png', as_attachment=True, download_name='preview.png')
 
+    except Exception as e:
+        app.logger.error(f"Preview generation failed: {str(e)}")
+        return jsonify({"error": str(e)}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
