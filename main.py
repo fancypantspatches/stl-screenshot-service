@@ -26,7 +26,7 @@ def render_stl():
         # Load the STL with trimesh
         mesh = trimesh.load(temp_path)
 
-        # Create an image using scene
+        # Create an image using the scene
         scene = mesh.scene()
         image = scene.save_image(resolution=(600, 600), visible=True)
 
@@ -39,7 +39,8 @@ def render_stl():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    if __name__ == "__main__":
+
+# ✅ Run the app when deployed (needed for Railway)
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
