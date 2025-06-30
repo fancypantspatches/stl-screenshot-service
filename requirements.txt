@@ -1,5 +1,4 @@
 flask
 trimesh
 gunicorn
-pyrender
-PyOpenGL
+moderngl
