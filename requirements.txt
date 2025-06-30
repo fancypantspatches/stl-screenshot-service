@@ -1,4 +1,5 @@
 flask
 trimesh
 gunicorn
-pyglet<2
+pyrender
+PyOpenGL
